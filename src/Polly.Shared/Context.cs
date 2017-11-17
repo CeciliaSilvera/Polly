@@ -13,7 +13,7 @@ namespace Polly
         // For an individual execution through a policy or policywrap, it is expected that all execution steps (for example executing the user delegate, invoking policy-activity delegates such as onRetry, onBreak, onTimeout etc) execute sequentially.  
         // Therefore, this class is intentionally not constructed to be safe for concurrent access from multiple threads.
 
-        
+
         private static Lazy<Dictionary<string, object>> _contextData = new Lazy<Dictionary<string, object>>();
         internal static readonly Context None = new Context();
 
@@ -187,12 +187,13 @@ namespace Polly
         /// <returns></returns>
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
-            return ((IDictionary<string, object>)_contextData.Value).GetEnumerator();
+            return _contextData.Value.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _contextData.Value.GetEnumerator();
+            return GetEnumerator();
+
         }
     }
 }

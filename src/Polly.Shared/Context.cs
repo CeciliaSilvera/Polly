@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Polly
@@ -7,13 +8,14 @@ namespace Polly
     /// Context that carries with a single execution through a Policy.   Commonly-used properties are directly on the class.  Backed by a dictionary of string key / object value pairs, to which user-defined values may be added.
     /// <remarks>Do not re-use an instance of <see cref="Context"/> across more than one execution.</remarks>
     /// </summary>
-    public class Context : Dictionary<string, object>
+    public class Context : IDictionary<string, object>
     {
         // For an individual execution through a policy or policywrap, it is expected that all execution steps (for example executing the user delegate, invoking policy-activity delegates such as onRetry, onBreak, onTimeout etc) execute sequentially.  
         // Therefore, this class is intentionally not constructed to be safe for concurrent access from multiple threads.
 
-        private static readonly IDictionary<string, object> emptyDictionary = new Dictionary<string, object>();
-        internal static readonly Context None = new Context(emptyDictionary);
+        
+        private static Lazy<Dictionary<string, object>> _contextData = new Lazy<Dictionary<string, object>>();
+        internal static readonly Context None = new Context();
 
         private Guid? _executionGuid;
 
@@ -21,8 +23,9 @@ namespace Polly
         /// Initializes a new instance of the <see cref="Context"/> class, with the specified <paramref name="executionKey"/>.
         /// </summary>
         /// <param name="executionKey">The execution key.</param>
-        public Context(String executionKey) : this(executionKey, emptyDictionary)
+        public Context(String executionKey)
         {
+            ExecutionKey = executionKey;
         }
 
         /// <summary>
@@ -35,13 +38,17 @@ namespace Polly
             ExecutionKey = executionKey;
         }
 
-        internal Context() : this(emptyDictionary)
+        internal Context()
         {
         }
-
-        internal Context(IDictionary<string, object> contextData) : base(contextData)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Context"/> class, with the specified <paramref name="contextData"/>.
+        /// </summary>
+        /// <param name="contextData">The context data</param>
+        public Context(IDictionary<string, object> contextData)
         {
             if (contextData == null) throw new ArgumentNullException(nameof(contextData));
+            _contextData = new Lazy<Dictionary<string, object>>(() => new Dictionary<string, object>(contextData));
         }
 
         /// <summary>
@@ -71,6 +78,121 @@ namespace Polly
                 return _executionGuid.Value;
             }
         }
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICollection<string> Keys => throw new NotImplementedException();
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICollection<object> Values => throw new NotImplementedException();
+        /// <summary>
+        /// 
+        /// </summary>
+        public int Count => throw new NotImplementedException();
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsReadOnly => throw new NotImplementedException();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public object this[string key] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool ContainsKey(string key)
+        {
+            return _contextData.Value.ContainsKey(key);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void Add(string key, object value)
+        {
+            _contextData.Value.Add(key, value);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool Remove(string key)
+        {
+            return _contextData.Value.Remove(key);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue(string key, out object value)
+        {
+            return _contextData.Value.TryGetValue(key, out value);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(KeyValuePair<string, object> item)
+        {
+            _contextData.Value.Add(item.Key, item.Value);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Clear()
+        {
+            _contextData.Value.Clear();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool Contains(KeyValuePair<string, object> item)
+        {
+
+            return ((IDictionary<string, object>)_contextData.Value).Contains(item);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="array"></param>
+        /// <param name="arrayIndex"></param>
+        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
+        {
+            ((IDictionary<string, object>)_contextData.Value).CopyTo(array, arrayIndex);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool Remove(KeyValuePair<string, object> item)
+        {
+            return _contextData.Value.Remove(item.Key);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+        {
+            return ((IDictionary<string, object>)_contextData.Value).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _contextData.Value.GetEnumerator();
+        }
     }
 }
